@@ -1,46 +1,58 @@
-source("./packages-not-greta.R")
+source("./packages.R")
 source("./conflicts.R")
 ## Load your R files
-lapply(list.files("./R/functions", full.names = TRUE), source)
+lapply(list.files("./R", full.names = TRUE), source)
 
-
-# LGA activity mobility from google
-# use st_overlap to get the weights of how the google LGAs map to
-# the ABS LGA data so 
-# need to find an ABS defn
-## tar_plan supports drake-style targets and also tar_target()
 tar_plan(
-
   # read in all surveys
-  doh_survey_weights = read_doh_add_weights(
+  contact_survey = read_doh_add_weights(
     doh_path = "~/not_synced/survey_data/",
     abs_lga_postcodes_path = "~/not_synced/CA_POSTCODE_2018_LGA_2018.xlsx"
   ),
-  vec_lgas_of_concern = generate_lgas_of_concern(),
-  # contact_num and contact_work
-  # filter to NSW
-  # by date and NSW LGA,
-  doh_survey_weights_nsw = prepare_survey_nsw(data = doh_survey_weights,
-                                              pmin_contact_num = 100,
-                                              vec_lgas_concern = vec_lgas_of_concern),
-  # compute both the number of respondents, and
-  # the average number of contacts per respondent
-  doh_survey_weights_nsw_summarised_lga_concern = doh_survey_weights_nsw %>% 
-    group_by(date_week, lga_of_concern) %>% 
+  contact_survey_nsw = prepare_survey_nsw(
+    data = contact_survey,
+    pmin_contact_num = 100,
+    vec_lgas_concern = generate_lgas_of_concern()
+  ),
+  contact_survey_nsw_summarised_lga_concern = contact_survey_nsw %>%
+    group_by(date_week, lga_of_concern) %>%
     summarise_contacts_weights(),
-  
-  # # plotting contact numbers separately for 16-39yos and 40+ yos (shouldn't be any under 16s)
-  doh_survey_nsw_weights_age_groups = doh_survey_weights_nsw %>%
+
+  contact_survey_nsw_summarised_lga_concern_age_groups = contact_survey_nsw %>%
     group_by(date_week, lga_of_concern, age_groups) %>%
     summarise_contacts_weights(),
-  
-  doh_survey_nsw_weights_16_39 = doh_survey_weights_nsw %>%
+  contact_survey_nsw_summarised_lga_concern_youth_older = contact_survey_nsw %>%
     group_by(date_week, lga_of_concern, youth_older) %>%
     summarise_contacts_weights(),
+  contact_survey_glmm_prepped = prepare_contact_survey_glmm(contact_survey_nsw),
+  contact_survey_fitted_glmm = fit_glmm_contact_survey(contact_survey_glmm_prepped),
+  contact_survey_glmm_aug = augment_glmm_contact_survey(
+    contact_survey_fitted_glmm,
+    contact_survey_glmm_prepped
+  ),
   
-  tar_render(nsw_lgas, "doc/nsw-lgas.Rmd")
+  contact_survey_glmm_aug
+  tar_render(nsw_lgas, "doc/nsw-lgas.Rmd"),
   
-  # 16-39yos and 40+ yos
-  # and also compare the 16-39yos vs the whole population
+  australia_linelist = read_linelist(path),
+  linelist_lga = add_lga_from_abs(
+    data_w_postcodes = australia_linelist,
+    abs_lga_file =
+      "~/not_synced/CA_POSTCODE_2018_LGA_2018.xlsx",
+    postcode_col = postcode
+  ),
+  tar_render(nsw_linelist, "doc/nsw-linelist.Rmd"),
   
+  google_shape = read_sf("~/not_synced/shapefiles/google/google.gpkg"),
+  abs_shape = read_sf("~/not_synced/shapefiles/abs_lga/LGA_2016_AUST.shp"),
+  weighted_abs_lga = calculate_spatial_overlap(
+    google_shape,
+    abs_shape
+  ),
+  
+
+  # average contact rates over time by 16-29
+  # average contact rates over time for ages,
+  # physical distancing over time by 16-29
+  # physical distancing over time for ages,
 )
