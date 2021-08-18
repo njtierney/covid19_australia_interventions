@@ -30,11 +30,12 @@ tar_plan(
     contact_survey_fitted_glmm,
     contact_survey_glmm_prepped
   ),
+  plot_phys_distance_glmmm_all_popn = gg_phys_distance_glmmm_all_popn(contact_survey_glmm_aug),
   
-  contact_survey_glmm_aug
+  
   tar_render(nsw_lgas, "doc/nsw-lgas.Rmd"),
   
-  australia_linelist = read_linelist(path),
+  australia_linelist = read_linelist(),
   linelist_lga = add_lga_from_abs(
     data_w_postcodes = australia_linelist,
     abs_lga_file =
