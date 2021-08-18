@@ -12,6 +12,8 @@ summarise_contacts_weights <- function(data) {
   data %>% 
     summarise(
       n_resp_weight = sum(n()*weight),
+      phys_dist_always_weight = weighted.mean(x = prop_phys_dist_always,
+                                              w = weight),
       across(
         .cols = contains("contact"),
         .fns = ~weighted.mean(x = .x, w = weight),

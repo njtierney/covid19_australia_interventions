@@ -15,7 +15,8 @@ prepare_survey_contact <- function(data,
     data %>% 
       add_date_week() %>% 
       filter(year == 2021) %>% 
-      mutate(contact_num = pmin(pmin_contact_num, contact_num)) %>% 
+      mutate(contact_num = pmin(pmin_contact_num, contact_num),
+             prop_phys_dist_always = phys_distance == "Always") %>% 
       add_lga_of_concern(vec_lgas_of_concern = vec_lga_of_concern) %>% 
     mutate(youth_older = if_else(
       condition = between(age, 16, 39),
