@@ -10,14 +10,12 @@
 #' @author Nicholas Tierney
 #' @export
 prepare_survey_nsw <- function(data,
-                               pmin_contact_num = 100, 
+                               pmin_contact_num = 100,
                                vec_lgas_concern) {
-
-  data %>% 
-  filter(state == "NSW",
-         age >= 16) %>% 
-    relocate(date, .after = wave) %>% 
+  data %>%
+    filter(state == "NSW") %>%
+    relocate(date, .after = wave) %>%
     prepare_survey_contact(pmin_contact_num = pmin_contact_num,
                            vec_lga_of_concern = vec_lgas_concern)
-
+  
 }

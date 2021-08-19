@@ -10,10 +10,8 @@
 fit_glmm_contact_survey <- function(contact_survey_glmm_prepped) {
 
   
-  contact_survey_glmm_prepped
-  
   model_survey_fit <- glmer(
-    cbind(n_always_distancing, n_not_distancing) ~ 1 + (1|lga),
+    prop_phys_dist_always ~ 1 + (1|lga),
     family = binomial,
     weights = weight,
     data = contact_survey_glmm_prepped

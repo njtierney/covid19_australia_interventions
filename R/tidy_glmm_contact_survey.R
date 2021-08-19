@@ -8,21 +8,17 @@
 #' @return
 #' @author Nicholas Tierney
 #' @export
-augment_glmm_contact_survey <- function(contact_survey_fitted_glmm,
-                                     contact_survey_glmm_prepped) {
+augment_glmm_contact_survey <- function(model,
+                                     data) {
   
-  
-  augment(x = contact_survey_fitted_glmm,
-          newdata = contact_survey_glmm_prepped)
-  # tibble(
-  #   lga = sort(unique(contact_survey_glmm_prepped$lga))
-  # ) %>%
-  #   mutate(
-  #     proportion_distancing = predict(contact_survey_fitted_glmm, 
-  #                                     newdata = ., 
-  #                                     type = "response")
-  #   )
-  
-  
+  tibble(
+    lga = sort(unique(data$lga))
+  ) %>%
+    mutate(
+      proportion_distancing = predict(model, 
+                                      newdata = ., 
+                                      type = "response")
+    )
+
 
 }

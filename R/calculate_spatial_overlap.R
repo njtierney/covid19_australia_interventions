@@ -12,13 +12,22 @@ calculate_spatial_overlap <- function(google_shape,
                                       abs_shape) {
   
   
-  abs_shape <- abs_shape %>% filter(STE_NAME16 == "New South Wales")
-  google_shape <- google_shape %>% filter(state == "New South Wales")
-  
   intersect_pct <- st_intersection(google_shape, abs_shape) %>% 
-    mutate(intersect_area = st_area(.))
+    mutate(intersect_area = st_area(.)) %>% 
+    select(area, LGA_NAME16, intersect_area) %>% 
+    st_drop_geometry()
   
   intersect_pct
   
+  # Create a fresh area variable for counties
+  abs_shape_areas <- abs_shape %>% 
+    mutate(lga_area_abs = st_area(.)) %>% 
+    select(lga_area_abs, LGA_NAME16) %>% 
+    st_drop_geometry()
+  
+  intersect_pct %>% 
+    left_join(abs_shape_areas, 
+              by = "LGA_NAME16") %>% 
+    mutate(weight = intersect_area / lga_area_abs)
   
 }

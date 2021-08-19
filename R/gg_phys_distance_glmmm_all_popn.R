@@ -7,12 +7,13 @@
 #' @return
 #' @author Nicholas Tierney
 #' @export
-gg_phys_distance_glmmm_all_popn <- function(contact_survey_glmm_aug) {
+gg_phys_distance_all_popn <- function(data,
+                                      y) {
   
   # cbind(n_always_distancing, n_not_distancing)
-  ggplot(contact_survey_glmm_aug,
+  ggplot(data,
          aes(x = date_week,
-             y = n_not_distancing,
+             y = {{y}},
              size = weight)) +
     geom_point(alpha = 0.75) +
     scale_colour_brewer(palette = "Dark2") +

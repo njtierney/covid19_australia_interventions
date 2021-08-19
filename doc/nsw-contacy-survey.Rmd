@@ -1,0 +1,186 @@
+---
+title: "Exploring NSW survey contact numbers across LGA"
+author: "Nicholas Tierney, Nicholas Golding"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    collapsed: false
+    toc_float: yes
+    keed_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      dev = "png",
+                      dpi = 300)
+## target knits Rmds in their own session, so load libraries here.
+## source("here::here(packages.R"))
+```
+
+```{r load-targets, include=FALSE}
+# source(here::here("packages.R"))
+# source(here::here("conflicts.R"))
+# # ## Load your R files
+# lapply(list.files("./R/.", full.names = TRUE), source)
+
+withr::with_dir(here::here(), {
+  tar_load(
+    c(
+      contact_survey_nsw,
+      contact_survey_nsw_summarised_lga_concern,
+      contact_survey_nsw_summarised_lga_concern_age_groups,
+      contact_survey_nsw_summarised_lga_concern_age_16_39,
+      contact_survey_nsw_summarised_lga_concern_age_16_29,
+      contact_survey_nsw_summarised_lga_concern_16_39_only,
+      contact_survey_nsw_summarised_lga_concern_all_and_16_39,
+      contact_survey_glmm_prepped,
+      contact_survey_fitted_glmm,
+      contact_survey_glmm_aug,
+      plot_average_contact_rates_for_16_29_vs_all,
+      plot_average_physical_distancing_for_16_29_vs_all
+    )
+  )
+})
+```
+
+## Analysis of NSW for 2021
+
+### General Exploration
+
+```{r}
+ggplot(contact_survey_nsw,
+       aes(x = age)) + 
+  geom_histogram(colour = "white",
+                 binwidth = 5)
+```
+
+
+### Average number of contacts {.tabset}
+
+#### Across NSW over all all ages
+
+```{r gg-contact-survey-nsw-summarised-lga-concern}
+gg_contact_survey(
+  data = contact_survey_nsw_summarised_lga_concern,
+  y = avg_contact_num_weight,
+  colour = lga_of_concern,
+  facet = lga_of_concern
+) +
+  labs(title = "Weighted average number of contacts")
+```
+
+#### For each age group
+
+```{r gg-contact-survey-nsw-summarised-lga-concern-age-groups, fig.height = 10}
+gg_contact_survey(
+  data = contact_survey_nsw_summarised_lga_concern_age_groups,
+  y = avg_contact_num_weight,
+  colour = lga_of_concern,
+  facet = age_groups
+) +
+  labs(title = "Average number of contacts over time for each age groups",
+       subtitle = "Individuals over the age of 16, with a simple smoother fit")
+```
+
+#### For 16-39 vs all popn
+
+```{r}
+gg_contact_survey(
+  data = contact_survey_nsw_summarised_lga_concern_all_and_16_39,
+  y = avg_contact_num_weight,
+  colour = which_popn,
+  facet = lga_of_concern
+) +
+  labs(title = "Weighted average number of contacts",
+       subtitle = "Comparing a subset of age groups (16-39) to all (16-100+), and LGA of concern\nPoint size corresponds to sample size",
+       x = "Date (aggregated weekly)",
+       y = "Weighted average number of contacts",
+       colour = "Age Group") 
+```
+
+#### For 16-29 vs all popn
+
+```{r}
+plot_average_contact_rates_for_16_29_vs_all
+```
+
+### Proportion of people physical distancing {.tabset}
+
+#### Across NSW over all all ages
+
+```{r gg-contact-survey-nsw-summarised-lga-concern-phs}
+gg_contact_survey(
+  data = contact_survey_nsw_summarised_lga_concern,
+  y = phys_dist_always_weight,
+  colour = lga_of_concern,
+  facet = lga_of_concern
+) +
+  labs(title = "Weighted always physically distancing")
+```
+
+#### For each age group
+
+```{r gg-contact-survey-nsw-summarised-lga-concern-age-group-phys}
+gg_contact_survey(
+  data = contact_survey_nsw_summarised_lga_concern_age_groups,
+  y = phys_dist_always_weight,
+  colour = lga_of_concern,
+  facet = age_groups
+) +
+  labs(title = "Weighted always physically distancing for each age groups",
+       subtitle = "Individuals over the age of 16, with a simple smoother fit")
+```
+
+#### For 16-39 vs all popn
+
+```{r}
+gg_contact_survey(
+  data = contact_survey_nsw_summarised_lga_concern_all_and_16_39,
+  y = phys_dist_always_weight,
+  colour = which_popn,
+  facet = lga_of_concern
+) +
+  labs(title = "Weighted proportion of people always physical distancing",
+       subtitle = "Comparing a subset of age groups (16-39) to all (16-100+), and LGA of concern\nPoint size corresponds to sample size",
+       x = "Date (aggregated weekly)",
+       y = "Proportion Physically Distanced",
+       colour = "Age Group") +
+  ylim(c(0,1))
+```
+
+#### For 16-29 vs all popn
+
+```{r}
+plot_average_physical_distancing_for_16_29_vs_all
+```
+
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>
+
