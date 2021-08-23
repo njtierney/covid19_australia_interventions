@@ -133,7 +133,7 @@ tar_plan(
     ),
   
   
-  tar_render(rmd_nsw_contact_survey, "doc/nsw-contacy-survey.Rmd"),
+  tar_render(rmd_nsw_contact_survey, "doc/nsw-contact-survey.Rmd"),
   contact_survey_glmm_prepped = prepare_contact_survey_glmm(contact_survey_nsw),
   contact_survey_fitted_glmm =
     fit_glmm_contact_survey(contact_survey_glmm_prepped),

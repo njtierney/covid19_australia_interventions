@@ -7,13 +7,30 @@ predict_mobility_trend <- function(
   max_date = max(mobility$date)
 ) {
   
-  print(mobility$state[[1]])
-  print(mobility$datastream[[1]])
-  
   all_dates <- seq(min_date, max_date, by = 1)
-  
   min_data_date = min(mobility$date)
   max_data_date = max(mobility$date)
+  
+  # empty row to return on error (NULL apparently won't work)
+  empty_df <- tibble(
+    state_long = mobility$state_long[1],
+    state = mobility$state[1],
+    lga = mobility$lga[1],
+    date = all_dates,
+    predicted_trend = NA,
+    datastream = mobility$datastream[1],
+    fitted_trend = NA,
+    fitted_trend_lower = NA,
+    fitted_trend_upper = NA
+  ) %>%
+    left_join(
+      mobility,
+      by = c("lga", "date", "datastream", "state_long", "state")
+    ) %>%
+    relocate(
+      trend,
+      .after = "datastream"
+    )
   
   public_holidays <- holiday_dates() %>%
     mutate(
@@ -28,29 +45,25 @@ predict_mobility_trend <- function(
       state = abbreviate_states(state)
     )
   
+  # need to deal with factor levels not in the original fit. I.e. when no date
+  # is observed with that intervention. Remove any interventions not matching
+  # the date and states in the data
+  
+  # # drop any stages for which there is no data (cannot be estimated)
+  
+  
   # create intervention step-change covariates
-  intervention_steps <- interventions(end_dates = TRUE) %>%
-    # add events for SA and QLD ending short lockdowns, to enable effects to be
-    # reversed
-    # bind_rows(
-    #   tibble(
-    #     date = as.Date("2020-11-22"),
-    #     state = "SA"
-    #   ),
-    #   tibble(
-    #     date = as.Date("2021-01-12"),
-    #     state = "QLD"
-    #   ),
-    #   tibble(
-    #     date = as.Date("2021-02-05"),
-    #     state = "WA"
-    #   ),
-    #   tibble(
-    #     date = as.Date("2021-02-18"),
-    #     state = "VIC"
-    #   )
-    # ) %>% # this code now superceded by end_dates = TRUE
-    filter(date <= max_data_date) %>%
+  interventions <- interventions(end_dates = TRUE) %>%
+    filter(
+      date <= max_data_date,
+      date %in% mobility$date
+    )
+  
+  if (nrow(interventions) == 0) {
+    return(empty_df)
+  }
+  
+  intervention_steps <- interventions %>%
     mutate(
       intervention_id = paste0(
         "intervention_",
@@ -71,7 +84,7 @@ predict_mobility_trend <- function(
     ) %>%
     mutate(
       intervention_stage = factor(intervention_stage)
-    )
+    ) 
   
   df <- mobility %>%
     left_join(
@@ -92,40 +105,56 @@ predict_mobility_trend <- function(
       is_a_school_holiday = !is.na(school_holiday),
       holiday = factor(holiday),
       date_num = as.numeric(date - min_date),
-      dow = wday(date, label = TRUE),
-      dow = as.character(dow)
+      dow = lubridate::wday(date, label = TRUE),
+      dow = as.character(dow),
+      intervention_stage = factor(
+        intervention_stage,
+        levels = unique(intervention_stage)
+      )
     ) %>%
     filter(!is.na(trend))
-
+  
   library(mgcv)
   
-  m <- gam(trend ~
-             
-             # smooth variations in mobility
-             s(date_num, k = 50) +
-             
-             # step changes around intervention impositions
-             intervention_stage +
-             
-             # random effect on holidays (different for each holiday, but shrunk
-             # to an average holiday effect which used to predict into future)
-             is_a_holiday +
-             s(holiday, bs = "re") +
-             
-             # constant effect for school holidays
-             is_a_school_holiday +
-             
-             # day of the week effect
-             dow,
-           
-           select = TRUE,
-           gamma = 2,
-           data = df)
+  m <- tryCatch(
+    gam(trend ~
+          
+          # smooth variations in mobility
+          s(date_num, k = 50) +
+          
+          # step changes around intervention impositions
+          intervention_stage +
+          
+          # random effect on holidays (different for each holiday, but shrunk
+          # to an average holiday effect which used to predict into future)
+          is_a_holiday +
+          s(holiday, bs = "re") +
+          
+          # constant effect for school holidays
+          is_a_school_holiday +
+          
+          # day of the week effect
+          dow,
+        
+        select = TRUE,
+        gamma = 2,
+        data = df),
+    
+    error = function(e) {
+      NULL
+    }
+    
+  )
+  
+  # return an empty row if there was an error
+  if (is.null(m)) {
+    return(empty_df)
+  }
   
   # compute mean and standard deviation of Gaussian observation model for fitted data
   fit <- predict(m, se.fit = TRUE)
   fit$sd <- sqrt(var(residuals(m)) + fit$se.fit ^ 2)
-
+  
   df_fitted <- df %>%
     # predict with fitted model (and get 90% CIs)
     mutate(
@@ -141,6 +170,8 @@ predict_mobility_trend <- function(
     date = all_dates,
   ) %>%
     mutate(
+      lga = df$lga[1],
+      datastream = mobility$datastream[1],
       state = abbreviate_states(state_long)
     ) %>% 
     left_join(
@@ -177,18 +208,18 @@ predict_mobility_trend <- function(
       predicted_trend = predict(m, newdata = pred_df)
     ) %>%
     group_by(
-      state_long, state, date
+      state_long, state, lga, datastream, date
     ) %>%
     summarise(
       predicted_trend = mean(predicted_trend),
       .groups = "drop"
     ) %>%
     group_by(
-      state
+      state, lga, datastream
     ) %>%
     # smooth fitted curve over days of the week and holidays
     mutate(
-      predicted_trend = slide_dbl(
+      predicted_trend = slider::slide_dbl(
         predicted_trend,
         gaussian_smooth,
         na.rm = TRUE,
@@ -201,15 +232,16 @@ predict_mobility_trend <- function(
     left_join(
       df_fitted %>%
         select(
-          state, state_long, date,
+          state, state_long, lga, date,
+          datastream,
           trend,
           fitted_trend,
           fitted_trend_lower,
           fitted_trend_upper
         ),
-      by = c("state", "state_long", "date")
+      by = c("state", "state_long", "lga", "datastream", "date")
     )
-
+  
   pred_df
   
 }
