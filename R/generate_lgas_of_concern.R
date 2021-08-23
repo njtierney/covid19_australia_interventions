@@ -7,20 +7,19 @@
 #' @return
 #' @author Nicholas Tierney
 #' @export
-generate_lgas_of_concern <- function() {
+lgas_of_concern <- function() {
 
-  paste0(c("Bayside",
-           "Blacktown",
-           "Burwood",
-           "Campbelltown",
-           "Canterbury-Bankstown",
-           "Cumberland",
-           "Fairfield",
-           "Georges River",
-           "Liverpool",
-           "Parramatta",
-           "Strathfield",
-           "Penrith"),
-         collapse = "|")
+  c("Bayside",
+    "Blacktown",
+    "Burwood",
+    "Campbelltown",
+    "Canterbury-Bankstown",
+    "Cumberland",
+    "Fairfield",
+    "Georges River",
+    "Liverpool",
+    "Parramatta",
+    "Strathfield",
+    "Penrith")
 
 }

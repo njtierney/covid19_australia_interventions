@@ -15,8 +15,10 @@ gg_contact_survey <-
            y = avg_contact_num_weight,
            colour = lga_of_concern,
            size = n_resp_weight,
-           facet = lga_of_concern) {
-    ggplot(data,
+           facet = lga_of_concern,
+           new_labels = NULL) {
+    
+p <- ggplot(data,
            aes(
              x = date_week,
              y = {{ y }},
@@ -31,9 +33,17 @@ gg_contact_survey <-
       ) +
       geom_point(alpha = 0.75) +
       scale_colour_brewer(palette = "Dark2") +
-      facet_wrap(facets = vars({{ facet }})) +
       theme(legend.position = "bottom") +
       scale_size(guide = "none")
-    
+
+if (is.null(new_labels)){
+  p <- p + facet_wrap(facets = vars({{ facet }}))
+} else if (!is.null(new_labels)){
+  p <- p + facet_wrap(facets = vars({{ facet }}),
+                      labeller = new_labels)
+}
+
+return(p)
+
     
   }
