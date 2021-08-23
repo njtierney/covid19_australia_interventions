@@ -56,3 +56,4 @@ outputs/*
 *.tex
 gr_git_notes.txt
 R/readmes/
+readmes/
