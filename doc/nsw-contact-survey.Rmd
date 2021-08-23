@@ -8,7 +8,8 @@ output:
     toc: true
     toc_depth: 3
     collapsed: false
-    toc_float: yes
+    toc_float: 
+      collapsed: false
     keed_md: true
 ---
 
@@ -28,6 +29,7 @@ knitr::opts_chunk$set(echo = TRUE,
 # # ## Load your R files
 # lapply(list.files("./R/.", full.names = TRUE), source)
 
+
 withr::with_dir(here::here(), {
   tar_load(
     c(
@@ -42,7 +44,9 @@ withr::with_dir(here::here(), {
       contact_survey_fitted_glmm,
       contact_survey_glmm_aug,
       plot_average_contact_rates_for_16_29_vs_all,
-      plot_average_physical_distancing_for_16_29_vs_all
+      plot_average_physical_distancing_for_16_29_vs_all,
+      plot_average_contact_rates_for_16_29_vs_all_sydney_lga_concern,
+      plot_average_physical_distancing_for_16_29_vs_all_sydney_lga_concern
     )
   )
 })
@@ -109,6 +113,12 @@ gg_contact_survey(
 plot_average_contact_rates_for_16_29_vs_all
 ```
 
+#### For 16-29 vs all popn for greater sydney vs lga of concern
+
+```{r}
+plot_average_contact_rates_for_16_29_vs_all_sydney_lga_concern
+```
+
 ### Proportion of people physical distancing {.tabset}
 
 #### Across NSW over all all ages
@@ -157,6 +167,12 @@ gg_contact_survey(
 
 ```{r}
 plot_average_physical_distancing_for_16_29_vs_all
+```
+
+#### For 16-29 vs all popn for greater sydney vs lga of concern
+
+```{r}
+plot_average_physical_distancing_for_16_29_vs_all_sydney_lga_concern
 ```
 
 
