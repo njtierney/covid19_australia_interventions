@@ -134,6 +134,7 @@ tar_plan(
   
   
   tar_render(rmd_nsw_contact_survey, "doc/nsw-contact-survey.Rmd"),
+  
   contact_survey_glmm_prepped = prepare_contact_survey_glmm(contact_survey_nsw),
   contact_survey_fitted_glmm =
     fit_glmm_contact_survey(contact_survey_glmm_prepped),
@@ -161,42 +162,57 @@ tar_plan(
   ),
   tar_render(nsw_linelist, "doc/nsw-linelist.Rmd"),
   tar_file(google_shape_path, "~/not_synced/shapefiles/google/google.gpkg"),
-  google_shape = read_sf() %>%
+  google_shape = read_sf(google_shape_path) %>%
     filter(state == "New South Wales"),
   abs_shape = read_sf("~/not_synced/shapefiles/abs_lga/LGA_2016_AUST.shp") %>%
     filter(STE_NAME16 == "New South Wales"),
-  abs_lga_weighted_by_google_lga_overlap = calculate_spatial_overlap(
+  abs_lga_google_concordance = calculate_spatial_overlap(
     google_shape,
-    abs_shape
+    abs_shape,
+    mobility_data_lga_table
   ),
-  tar_file(weighted_abs_lga_csv, {
+  tar_file(abs_lga_google_concordance_csv, {
     write_csv(
-      x = abs_lga_weighted_by_google_lga_overlap,
-      file = "data/abs_lga_weighted_by_google_lga_overlap.csv"
+      x = abs_lga_google_concordance,
+      file = "data/abs_lga_google_concordance.csv"
     )
-    "data/abs_lga_weighted_by_google_lga_overlap.csv"
+    "data/abs_lga_google_concordance.csv"
   }),
 
   # modelling the mobility metrics by LGA
   # https://github.com/goldingn/covid19_australia_interventions/blob/nsw_tp/R/nsw_tp.R
 
-  google_mobility_data = read_google_mobility_data(),
-  google_mobility_nsw = tidy_mobility_nsw(google_mobility_data),
-  first_date = min(google_mobility_nsw$date),
-  last_date = max(google_mobility_nsw$date),
-  google_mobility_fitted_nsw = add_mobility_data(google_mobility_nsw),
+  mobility_data = read_google_mobility_data(),
+  mobility_data_lga_table = create_lga_lookup(mobility_data),
+  mobility_nsw = tidy_mobility_nsw(mobility_data),
+  first_date = min(mobility_nsw$date),
+  last_date = max(mobility_nsw$date),
+  mobility_fitted_nsw = add_mobility_data(mobility_nsw),
   
+  mobility_fitted_nsw_concordance = add_concordance(mobility_fitted_nsw,
+                                                    abs_lga_google_concordance),
+  
+  mobility_holidays_interventions = add_holidays_interventions(mobility_nsw),
+  hr
   # keep only the LGAs where we managed to fit a model (others have too-small
   # sample sizes for Google to provide data on the metrics we care about)
   
-  google_mobility_fitted_nsw_model_is_fit = 
-    filter_lgas_where_model_is_fit(google_mobility_fitted_nsw),
+  mobility_fitted_nsw_model_is_fit = 
+    filter_lgas_where_model_is_fit(mobility_fitted_nsw),
+  
+  mobility_fitted_nsw_model_id_lgas_not_fit = identify_lgas_model_not_fit(
+    mobility_fitted_nsw,
+    mobility_fitted_nsw_model_is_fit
+  ),
+  
+  mobility_nsw_lgas_not_fit = mobility_nsw %>% 
+    filter(lga %in% mobility_fitted_nsw_model_id_lgas_not_fit),
   
   lgas_to_fit = 
-    na.omit(unique(google_mobility_fitted_nsw_model_is_fit$lga)),
+    na.omit(unique(mobility_fitted_nsw_model_is_fit$lga)),
   
   plot_mobility_fitted_trend = 
-    gg_mobility_fitted_trend(google_mobility_fitted_nsw_model_is_fit,
+    gg_mobility_fitted_trend(mobility_fitted_nsw_model_is_fit,
                              lga_of_interest = lgas_to_fit,
                              last_date),
   
