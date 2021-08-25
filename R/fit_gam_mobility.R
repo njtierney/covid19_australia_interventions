@@ -12,7 +12,8 @@ fit_gam_mobility <- function(df) {
   gam(trend ~
         
         # smooth variations in mobility
-        s(date_num, k = 50) +
+        # s(date_num, k = 50) +
+        s(date_num, k = 48) +
         
         # step changes around intervention impositions
         intervention_stage +

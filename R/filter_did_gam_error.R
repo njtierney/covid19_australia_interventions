@@ -9,7 +9,14 @@
 #' @export
 filter_did_gam_error <- function(mobility_nest_model_fit) {
 
-  mobility_nest_model_fit %>% filter(did_error) 
+  mobility_nest_model_fit %>% 
+    filter(did_error) %>% 
+    mutate(error_message = map_chr(error, glue_collapse)) %>% 
+    arrange(error_message) %>% 
+    select(lga,
+           datastream,
+           data,
+           error_message) 
     
 
 }

@@ -224,7 +224,7 @@ tar_plan(
   mobility_nest_model_fit = add_gam_fit(mobility_holidays_interventions),
   mobility_gam_which_fit = filter_did_gam_fit(mobility_nest_model_fit),
   mobility_gam_which_error = filter_did_gam_error(mobility_nest_model_fit),
-  mobility_gam_refit_error = refit_gam(mobility_gam_which_error),
+  mobility_gam_refit_error = mobility_refit_gam(mobility_gam_which_error),
   # which uses this function: `predict_mobility_trend`
   # (note it has been modified from the branch you were working on)
   # For each metric and each Google LGA, I'm fitting a GAM.
