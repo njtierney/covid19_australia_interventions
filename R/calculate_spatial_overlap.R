@@ -9,7 +9,8 @@
 #' @author Nicholas Tierney
 #' @export
 calculate_spatial_overlap <- function(google_shape,
-                                      abs_shape) {
+                                      abs_shape,
+                                      mobility_data_lga_table) {
   
   
   intersect_pct <- st_intersection(google_shape, abs_shape) %>% 
@@ -25,9 +26,15 @@ calculate_spatial_overlap <- function(google_shape,
     select(lga_area_abs, LGA_NAME16) %>% 
     st_drop_geometry()
   
-  intersect_pct %>% 
+  concordance <- intersect_pct %>% 
     left_join(abs_shape_areas, 
               by = "LGA_NAME16") %>% 
     mutate(weight = intersect_area / lga_area_abs)
+  
+  
+  concordance %>% 
+    left_join(mobility_data_lga_table,
+              by = c("area" = "original_lga")) %>% 
+    relocate(lga, .before = area) 
   
 }
