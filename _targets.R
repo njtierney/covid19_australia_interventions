@@ -189,7 +189,7 @@ tar_plan(
   mobility_fitted_nsw_concordance = add_concordance(mobility_fitted_nsw,
                                                     abs_lga_google_concordance),
   
-  mobility_holidays_interventions = add_holidays_interventions(mobility_nsw),
+  
   # keep only the LGAs where we managed to fit a model (others have too-small
   # sample sizes for Google to provide data on the metrics we care about)
   
@@ -216,8 +216,15 @@ tar_plan(
     gg_save_mobility_fitted_trend(plot_mobility_trend,
                                   lga_of_interest = lgas_to_fit,
                                   last_date = last_date),
-
-
+  
+  # work on a new approach to fitting these models
+  
+  
+  mobility_holidays_interventions = add_holidays_interventions(mobility_nsw),
+  mobility_nest_model_fit = add_gam_fit(mobility_holidays_interventions),
+  mobility_gam_which_fit = filter_did_gam_fit(mobility_nest_model_fit),
+  mobility_gam_which_error = filter_did_gam_error(mobility_nest_model_fit),
+  mobility_gam_refit_error = refit_gam(mobility_gam_which_error),
   # which uses this function: `predict_mobility_trend`
   # (note it has been modified from the branch you were working on)
   # For each metric and each Google LGA, I'm fitting a GAM.
