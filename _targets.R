@@ -8,11 +8,11 @@ tar_plan(
 
   tar_file(
     doh_path,
-    path("~/not_synced/survey_data/")
+    here("data/survey_data/")
   ),
   tar_file(
     abs_lga_postcodes_path,
-    path("~/not_synced/CA_POSTCODE_2018_LGA_2018.xlsx")
+    here("data/CA_POSTCODE_2018_LGA_2018.xlsx")
   ),
   # read in all surveys
   contact_survey = read_doh_add_weights(
@@ -21,7 +21,8 @@ tar_plan(
   ),
   greater_sydney_lgas = extract_greater_sydney_lgas(),
   lga_of_concern = lgas_of_concern(),
-  greater_sydney_without_lga_of_concern = setdiff(greater_sydney_lgas, lga_of_concern),
+  greater_sydney_without_lga_of_concern = 
+    setdiff(greater_sydney_lgas, lga_of_concern),
   contact_survey_nsw = prepare_survey_nsw(
     data = contact_survey,
     pmin_contact_num = 20,
@@ -132,7 +133,6 @@ tar_plan(
       lga_facet_names
     ),
   
-  
   tar_render(rmd_nsw_contact_survey, "doc/nsw-contact-survey.Rmd"),
   
   contact_survey_glmm_prepped = prepare_contact_survey_glmm(contact_survey_nsw),
@@ -152,19 +152,18 @@ tar_plan(
       y = .fitted
     ),
 
-  # getting the
   australia_linelist = read_linelist(),
+  tar_file(abs_lga_path, here("data/CA_POSTCODE_2018_LGA_2018.xlsx")),
   linelist_lga = add_lga_from_abs(
     data_w_postcodes = australia_linelist,
-    abs_lga_file =
-      "~/not_synced/CA_POSTCODE_2018_LGA_2018.xlsx",
-    postcode_col = postcode
+    abs_lga_file = abs_lga_path,
   ),
   tar_render(nsw_linelist, "doc/nsw-linelist.Rmd"),
-  tar_file(google_shape_path, "~/not_synced/shapefiles/google/google.gpkg"),
+  tar_file(google_shape_path, here("data/shapefiles/google/google.gpkg")),
   google_shape = read_sf(google_shape_path) %>%
     filter(state == "New South Wales"),
-  abs_shape = read_sf("~/not_synced/shapefiles/abs_lga/LGA_2016_AUST.shp") %>%
+  tar_file(abs_shape_path, here("data/shapefiles/abs_lga/LGA_2016_AUST.shp")),
+  abs_shape = read_sf(abs_shape_path) %>% 
     filter(STE_NAME16 == "New South Wales"),
   abs_lga_google_concordance = calculate_spatial_overlap(
     google_shape,
@@ -174,9 +173,9 @@ tar_plan(
   tar_file(abs_lga_google_concordance_csv, {
     write_csv(
       x = abs_lga_google_concordance,
-      file = "data/abs_lga_google_concordance.csv"
+      file = here("data/abs_lga_google_concordance.csv")
     )
-    "data/abs_lga_google_concordance.csv"
+    here("data/abs_lga_google_concordance.csv")
   }),
 
   # modelling the mobility metrics by LGA
@@ -185,15 +184,12 @@ tar_plan(
   mobility_data = read_google_mobility_data(),
   mobility_data_lga_table = create_lga_lookup(mobility_data),
   mobility_nsw = tidy_mobility_nsw(mobility_data),
-  first_date = min(mobility_nsw$date),
-  last_date = max(mobility_nsw$date),
   mobility_fitted_nsw = add_mobility_data(mobility_nsw),
   
   mobility_fitted_nsw_concordance = add_concordance(mobility_fitted_nsw,
                                                     abs_lga_google_concordance),
   
   mobility_holidays_interventions = add_holidays_interventions(mobility_nsw),
-  hr
   # keep only the LGAs where we managed to fit a model (others have too-small
   # sample sizes for Google to provide data on the metrics we care about)
   

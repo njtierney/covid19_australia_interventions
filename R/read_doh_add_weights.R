@@ -8,9 +8,8 @@
 #' @return
 #' @author Nicholas Tierney
 #' @export
-read_doh_add_weights <- function(doh_path = "~/not_synced/survey_data/",
-                                 abs_lga_postcodes_path =
-                                 "~/not_synced/CA_POSTCODE_2018_LGA_2018.xlsx") {
+read_doh_add_weights <- function(doh_path,
+                                 abs_lga_postcodes_path) {
   
     doh_survey <- parse_all_doh_surveys(doh_path)
     
