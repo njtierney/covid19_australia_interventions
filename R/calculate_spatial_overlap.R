@@ -33,6 +33,9 @@ calculate_spatial_overlap <- function(google_shape,
   concordance %>% 
     left_join(mobility_data_lga_table,
               by = c("area" = "google_original_lga")) %>% 
-    relocate(google_lga, .before = area) 
+    relocate(google_lga, .before = area) %>% 
+    group_by(LGA_NAME16) %>% 
+    # not 100% overlap, so we need to normalise the weights
+    mutate(weight = weight / sum(weight))
   
 }

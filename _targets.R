@@ -186,15 +186,37 @@ tar_plan(
   mobility_nsw = tidy_mobility_nsw(mobility_data),
   mobility_fitted_nsw = add_mobility_data(mobility_nsw),
   
-  mobility_fitted_nsw_concordance = add_concordance(mobility_fitted_nsw,
-                                                    abs_lga_google_concordance),
-  
-  
   # keep only the LGAs where we managed to fit a model (others have too-small
   # sample sizes for Google to provide data on the metrics we care about)
   
   mobility_fitted_nsw_model_is_fit = 
     filter_lgas_where_model_is_fit(mobility_fitted_nsw),
+  
+  mobility_fitted_nsw_concordance = add_concordance(
+      mobility_fitted_nsw_model_is_fit,
+      abs_lga_google_concordance
+      ),
+  
+  mobility_for_plotting = prepare_mobility_for_plots(
+    mobility_fitted_nsw_concordance
+  ),
+  
+  df_mobility_fitted_trend_plots =  gg_mobility_fitted_trend_all_lga(
+    mobility_fitted_nsw_concordance
+    ),
+  
+  df_mobility_fitted_trend_plot_paths = add_mobility_filepath(
+    df_mobility_fitted_trend_plots
+    ),
+  
+  
+  tar_file(write_mobility_fitted_ggplot, {
+    gg_save_mobility_fitted_trend(
+      df_mobility_fitted_trend_plot_paths
+    )
+    df_mobility_fitted_trend_plot_paths$path
+  }
+  ),
   
   mobility_fitted_nsw_model_id_lgas_not_fit = identify_lgas_model_not_fit(
     mobility_fitted_nsw,
@@ -206,16 +228,6 @@ tar_plan(
   
   lgas_to_fit = 
     na.omit(unique(mobility_fitted_nsw_model_is_fit$lga)),
-  
-  plot_mobility_fitted_trend = 
-    gg_mobility_fitted_trend(mobility_fitted_nsw_model_is_fit,
-                             lga_of_interest = lgas_to_fit,
-                             last_date),
-  
-  write_mobility_fitted_ggplot = 
-    gg_save_mobility_fitted_trend(plot_mobility_trend,
-                                  lga_of_interest = lgas_to_fit,
-                                  last_date = last_date),
   
   # work on a new approach to fitting these models
   mobility_holidays_interventions = add_holidays_interventions(mobility_nsw),

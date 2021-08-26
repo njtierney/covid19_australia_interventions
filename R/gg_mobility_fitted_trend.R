@@ -7,21 +7,15 @@
 #' @return
 #' @author Nicholas Tierney
 #' @export
-gg_mobility_fitted_trend <- function(mobility_fitted,
-                                     lga_of_interest,
-                                     last_date) {
-
+gg_mobility_fitted_trend <- function(
+  mobility_fitted_nsw_concordance,
+  last_date = max(mobility_fitted_nsw_concordance$date),
+  lga_name
+  ){
 
   # all_lgas <- na.omit(unique(mobility_fitted$lga))
-
-  # for (this_lga in all_lgas) {
-
-  mobility_fitted %>%
-    filter(
-      lga == lga_of_interest,
-      !is.na(datastream)
-    ) %>%
-    ggplot() +
+  
+    ggplot(data = mobility_fitted_nsw_concordance) +
     aes(date, fitted_trend) +
     geom_hline(
       yintercept = 0,
@@ -70,12 +64,13 @@ gg_mobility_fitted_trend <- function(mobility_fitted,
     scale_x_date(
       date_breaks = "2 months",
       date_labels = "%b",
-      limits = range(mobility_fitted$date)
+      limits = range(mobility_fitted_nsw_concordance$date)
     ) +
     labs(
-      title = glue(
-        "Percentage change in selected mobility datastreams up to",
-        "{format(last_date, format = '%B %d')}",
+      title = "Percentage change in selected mobility datastreams",
+      subtitle = glue(
+        "{lga_name}\n",
+        "Up until {format(last_date, format = '%B %d')}, ",
         "{format(last_date, format = '%Y')}"
       ),
       x = "",
