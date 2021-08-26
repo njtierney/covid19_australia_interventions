@@ -218,13 +218,14 @@ tar_plan(
                                   last_date = last_date),
   
   # work on a new approach to fitting these models
-  
-  
   mobility_holidays_interventions = add_holidays_interventions(mobility_nsw),
-  mobility_nest_model_fit = add_gam_fit(mobility_holidays_interventions),
+  mobility_nest_model_fit = add_gam_fit(mobility_holidays_interventions,
+                                        s_k = 48),
   mobility_gam_which_fit = filter_did_gam_fit(mobility_nest_model_fit),
   mobility_gam_which_error = filter_did_gam_error(mobility_nest_model_fit),
   mobility_gam_refit_error = mobility_refit_gam(mobility_gam_which_error),
+  mobility_grid = create_expanded_grid(mobility_nest_model_fit),
+  mobility_gam_added_preds = add_fitted_upper_lower(mobility_gam_which_fit),
   # which uses this function: `predict_mobility_trend`
   # (note it has been modified from the branch you were working on)
   # For each metric and each Google LGA, I'm fitting a GAM.

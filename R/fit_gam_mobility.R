@@ -7,13 +7,13 @@
 #' @return
 #' @author Nicholas Tierney
 #' @export
-fit_gam_mobility <- function(df) {
+fit_gam_mobility <- function(df, s_k = 50) {
 
   gam(trend ~
         
         # smooth variations in mobility
         # s(date_num, k = 50) +
-        s(date_num, k = 48) +
+        s(date_num, k = s_k) +
         
         # step changes around intervention impositions
         intervention_stage +
