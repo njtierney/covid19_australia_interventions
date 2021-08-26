@@ -18,8 +18,6 @@ calculate_spatial_overlap <- function(google_shape,
     select(area, LGA_NAME16, intersect_area) %>% 
     st_drop_geometry()
   
-  intersect_pct
-  
   # Create a fresh area variable for counties
   abs_shape_areas <- abs_shape %>% 
     mutate(lga_area_abs = st_area(.)) %>% 
@@ -34,7 +32,7 @@ calculate_spatial_overlap <- function(google_shape,
   
   concordance %>% 
     left_join(mobility_data_lga_table,
-              by = c("area" = "original_lga")) %>% 
-    relocate(lga, .before = area) 
+              by = c("area" = "google_original_lga")) %>% 
+    relocate(google_lga, .before = area) 
   
 }

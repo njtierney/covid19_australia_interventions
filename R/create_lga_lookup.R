@@ -39,6 +39,8 @@ create_lga_lookup <- function(mobility_data) {
     select(lga,
            original_lga) %>% 
     distinct() %>% 
-    arrange(lga)
+    arrange(lga) %>% 
+    rename(google_lga = lga,
+           google_original_lga = original_lga)
 
 }
