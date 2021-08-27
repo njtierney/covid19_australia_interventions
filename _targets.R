@@ -218,6 +218,11 @@ tar_plan(
   }
   ),
   
+  # save predictions in correct format for macro and mobility models
+  mobility_fitted_nsw_concordance_micro_macro = 
+    prepare_fitted_for_macro_micro_models(mobility_fitted_nsw_concordance),
+  
+  
   mobility_fitted_nsw_model_id_lgas_not_fit = identify_lgas_model_not_fit(
     mobility_fitted_nsw,
     mobility_fitted_nsw_model_is_fit

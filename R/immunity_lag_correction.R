@@ -5,6 +5,8 @@
 # Compute a correction factor to downgrade the coverage (by number of doses)
 # based on the fraction of all people with that number of doses that received it
 # at each point in time the last 2-3 weeks.
+# note that for first doses, this needs to be *all* first doses, since otherwise
+# people leave and screw up the calculation
 immunity_lag_correction <- function(date, coverage,
                                     weeks_increase = 2,
                                     weeks_wait = 1) {

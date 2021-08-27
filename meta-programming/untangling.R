@@ -22,3 +22,6 @@ r_Files
 which_code_calls_library <- map_dfr(r_source_files, file_library)
 which_code_calls_library
 
+sinew::untangle(file = "parse_nsw_vaccination_data.R",
+                dir.out = "R/",
+                keep.body = TRUE)
