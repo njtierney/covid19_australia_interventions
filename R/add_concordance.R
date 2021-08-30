@@ -37,6 +37,7 @@ add_concordance <-
         ),
         .fns = ~weighted.mean(x = .x,
                               w = weight,
-                              na.rm = TRUE)))
+                              na.rm = TRUE))) %>% 
+      ungroup()
     
   }
