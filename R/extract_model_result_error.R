@@ -17,6 +17,7 @@ extract_model_result_error <- function(df, model_fit) {
     did_error = map_lgl(error, negate(is.null)),
     did_fit = map_lgl(model, negate(is.null))
   ) %>% 
+    extract_error_message(error) %>% 
     select(-model_fit) 
 
 }
