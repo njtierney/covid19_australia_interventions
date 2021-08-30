@@ -7,9 +7,9 @@
 #' @return
 #' @author Nicholas Tierney
 #' @export
-filter_lgas_where_model_is_fit <- function(mobility_fitted) {
+filter_lgas_where_model_is_fit <- function(mobility_fitted_nsw) {
 
-  lgas_to_keep <- mobility_fitted %>%
+  lgas_to_keep <- mobility_fitted_nsw %>%
     filter(!is.na(datastream)) %>%
     select(lga, date, datastream, predicted_trend) %>%
     group_by(lga, date) %>%
@@ -36,7 +36,7 @@ filter_lgas_where_model_is_fit <- function(mobility_fitted) {
     "Google: time at workplaces"
   )
   
-  mobility_fitted %>%
+  mobility_fitted_nsw %>%
     filter(
       datastream %in% datastreams_to_keep,
       lga %in% lgas_to_keep

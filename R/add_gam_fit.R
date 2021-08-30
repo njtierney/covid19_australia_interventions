@@ -19,12 +19,6 @@ add_gam_fit <-
     
     gam_model_fit %>%
       ungroup() %>%
-      mutate(
-        model = map(model_fit, pluck, "result"),
-        error = map(model_fit, pluck, "error"),
-        did_error = map_lgl(error, negate(is.null)),
-        did_fit = map_lgl(model, negate(is.null))
-      ) %>%
-      select(-model_fit)
+      extract_model_result_error(model_fit)
     
   }

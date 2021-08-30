@@ -25,3 +25,4 @@ which_code_calls_library
 sinew::untangle(file = "parse_nsw_vaccination_data.R",
                 dir.out = "R/",
                 keep.body = TRUE)
+
