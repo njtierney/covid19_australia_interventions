@@ -1,5 +1,4 @@
 # compute NSW vaccination effects on transmission, by LGA.
-source("R/functions.R")
 
 # lookup to disaggregate coverages to 5y age groups
 age_lookup <- tibble::tribble(

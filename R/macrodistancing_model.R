@@ -24,7 +24,7 @@ macrodistancing_model <- function(data, parameters) {
   # average daily number of contacts
   log_mean_daily_contacts <- log(parameters$OC_0) + log_change_contacts
   mean_daily_contacts <- exp(log_mean_daily_contacts)
-
+  
   # model the fraction of contacts falling on each day of the week via a multilogit model
   n <- nrow(log_mean_daily_contacts)
   X <- cbind(ones(n), log_mean_daily_contacts)
@@ -34,7 +34,7 @@ macrodistancing_model <- function(data, parameters) {
   # actual weekday for that date
   idx <- cbind(
     seq_len(n),
-    wday(data$location_change_trends$date)
+    lubridate::wday(data$location_change_trends$date)
   )
   
   log_fraction_weekly_contacts <- log_imultilogit(eta)[idx]
@@ -42,7 +42,7 @@ macrodistancing_model <- function(data, parameters) {
   # this equivalent to:
   #   log_fraction_weekly_contacts_wday <- eta[idx] - log_sum_exp(eta)
   # but shouldn't be much different speed-wise
-
+  
   # use this to apply the weekday effect
   log_mean_weekly_contacts <- log_mean_daily_contacts + log(7)
   log_mean_daily_contacts_wday <- log_mean_weekly_contacts + log_fraction_weekly_contacts

@@ -219,8 +219,33 @@ tar_plan(
   ),
   
   # save predictions in correct format for macro and mobility models
+  # AKA "location_change_trends" object in "nsw-tp.R"
   mobility_fitted_nsw_concordance_micro_macro = 
     prepare_fitted_for_macro_micro_models(mobility_fitted_nsw_concordance),
+  
+  
+  # load fitted macrodistancing model
+  macro_model = read_rds("outputs/fitted_macro_model.RDS"),
+  
+  macro_distancing_trends_lga = 
+    model_macro_distancing_trends_lga(
+      location_change_trends,
+      macro_model
+      ),
+  
+  tar_file(macro_distancing_trends_lga_csv, {
+    write_csv(
+      x = pred_trend,
+      file = here("outputs/nsw/nonhousehold_contacts_lga_modelled.csv")
+    )
+    here("outputs/nsw/nonhousehold_contacts_lga_modelled.csv")
+  }),
+  
+  
+  # combine these with NSW data for other components to get TP for each LGA
+  
+  # load fitted reff model
+  fitted_reff_model = readRDS("outputs/fitted_reff_model.RDS"),
   
   
   mobility_fitted_nsw_model_id_lgas_not_fit = identify_lgas_model_not_fit(
@@ -230,6 +255,8 @@ tar_plan(
   
   mobility_nsw_lgas_not_fit = mobility_nsw %>% 
     filter(lga %in% mobility_fitted_nsw_model_id_lgas_not_fit),
+  
+  
   
   lgas_to_fit = 
     na.omit(unique(mobility_fitted_nsw_model_is_fit$lga)),
@@ -245,15 +272,8 @@ tar_plan(
   mobility_gam_added_preds = add_fitted_upper_lower(mobility_gam_which_fit),
   # which uses this function: `predict_mobility_trend`
   # (note it has been modified from the branch you were working on)
-  # For each metric and each Google LGA, I'm fitting a GAM.
-  # But sometimes it crashes because there's not enough data
-  # Need those LGAs, so a solution that will run
-  # tweaks model to make it run
-
-  # model fitting over all LGAs to share google movement information
-  # using urban/rural distinctions of ABS
-  # plus a fixed effect over urban/rural + lockdowns (by LGA)
-  # need a dataset of lockdowns by LGA
+  
+  
 
   # LGA activity mobility from google
   # vaccination forecasting coverage
