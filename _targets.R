@@ -1,8 +1,9 @@
 message("loading R packages")
-suppressPackageStartupMessages(source("./packages.R"))
-source("./conflicts.R")
+suppressPackageStartupMessages(source(here::here("packages.R")))
+source(here("greta-tf-objs.R"))
+# source("./conflicts.R")
 ## Load your R files
-lapply(list.files("./R", full.names = TRUE), source)
+lapply(list.files(here("R"), full.names = TRUE), source)
 
 tar_plan(
 
@@ -218,36 +219,6 @@ tar_plan(
   }
   ),
   
-  # save predictions in correct format for macro and mobility models
-  # AKA "location_change_trends" object in "nsw-tp.R"
-  mobility_fitted_nsw_concordance_micro_macro = 
-    prepare_fitted_for_macro_micro_models(mobility_fitted_nsw_concordance),
-  
-  
-  # load fitted macrodistancing model
-  macro_model = read_rds("outputs/fitted_macro_model.RDS"),
-  
-  macro_distancing_trends_lga = 
-    model_macro_distancing_trends_lga(
-      location_change_trends,
-      macro_model
-      ),
-  
-  tar_file(macro_distancing_trends_lga_csv, {
-    write_csv(
-      x = pred_trend,
-      file = here("outputs/nsw/nonhousehold_contacts_lga_modelled.csv")
-    )
-    here("outputs/nsw/nonhousehold_contacts_lga_modelled.csv")
-  }),
-  
-  
-  # combine these with NSW data for other components to get TP for each LGA
-  
-  # load fitted reff model
-  fitted_reff_model = readRDS("outputs/fitted_reff_model.RDS"),
-  
-  
   mobility_fitted_nsw_model_id_lgas_not_fit = identify_lgas_model_not_fit(
     mobility_fitted_nsw,
     mobility_fitted_nsw_model_is_fit
@@ -255,8 +226,6 @@ tar_plan(
   
   mobility_nsw_lgas_not_fit = mobility_nsw %>% 
     filter(lga %in% mobility_fitted_nsw_model_id_lgas_not_fit),
-  
-  
   
   lgas_to_fit = 
     na.omit(unique(mobility_fitted_nsw_model_is_fit$lga)),
@@ -268,10 +237,45 @@ tar_plan(
   mobility_gam_which_fit = filter_did_gam_fit(mobility_nest_model_fit),
   mobility_gam_which_error = filter_did_gam_error(mobility_nest_model_fit),
   mobility_gam_refit_error = mobility_refit_gam(mobility_gam_which_error),
+  mobility_gam_refit_error_id_poor_fit = 
+    filter_gam_poor_fit(mobility_gam_which_error),
+  # need to check some of the implementation details for using the expand grid
+  # part of this.
   mobility_grid = create_expanded_grid(mobility_nest_model_fit),
   mobility_gam_added_preds = add_fitted_upper_lower(mobility_gam_which_fit),
   # which uses this function: `predict_mobility_trend`
   # (note it has been modified from the branch you were working on)
+
+  # save predictions in correct format for macro and mobility models
+  # AKA "location_change_trends" object in "nsw-tp.R"
+  location_change_trends = 
+    prepare_fitted_for_macro_micro_models(mobility_fitted_nsw_concordance),
+  
+  
+  # load fitted macrodistancing model
+  tar_file(macro_model_path, here("outputs/nsw/fitted_macro_model.RDS")),
+  
+  macro_model = read_rds(macro_model_path),
+  
+  macro_distancing_trends_lga = 
+    model_macro_distancing_trends_lga(
+      location_change_trends,
+      macro_model
+    ),
+  
+  tar_file(macro_distancing_trends_lga_csv, {
+    write_csv(
+      x = macro_distancing_trends_lga,
+      file = here("outputs/nsw/nonhousehold_contacts_lga_modelled.csv")
+    )
+    here("outputs/nsw/nonhousehold_contacts_lga_modelled.csv")
+  }),
+  
+  
+  # combine these with NSW data for other components to get TP for each LGA
+  
+  # load fitted reff model
+  fitted_reff_model = readRDS("outputs/fitted_reff_model.RDS"),
   
   
 
