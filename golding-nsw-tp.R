@@ -1,0 +1,320 @@
+# save predictions in correct format for macro and mobility models
+google_change_trends_lga <- mobility_fitted %>%
+  filter(
+    grepl("^Google: ", datastream)
+  ) %>%
+  mutate(
+    change = 1 + (predicted_trend / 100),
+    lga_datastream = paste(lga, datastream)
+  ) %>%
+  select(
+    lga_datastream,
+    state = state_long,
+    datastream,
+    change,
+    date
+  )
+
+
+# convert these into macrodistancing (non-household contact) timeseries
+location_change_trends <- google_change_trends_lga %>%
+  mutate(location = case_when(
+    datastream == "Google: time at residential" ~ "home",
+    datastream == "Google: time at transit stations" ~ "transit",
+    datastream == "Google: time at parks" ~ "public",
+    datastream == "Google: time at workplaces" ~ "work",
+    datastream == "Google: time at retail and recreation" ~ "retail",
+    TRUE ~ "other"
+  )) %>%
+  filter(location != "other") %>%
+  mutate(
+    lga = str_remove(
+      lga_datastream,
+      paste0("\\s", datastream)
+    )
+  ) %>%
+  select(-lga_datastream, -datastream, -state) %>% 
+  arrange(
+    lga,
+    date
+  ) %>%
+  pivot_wider(
+    names_from = location,
+    values_from = change
+  ) %>%
+  relocate(
+    lga,
+    .before = everything()
+  ) %>%
+  mutate_at(
+    vars(public, home, retail, transit, work),
+    ~replace_na(., 1)
+  ) %>%
+  # location indicator needs to be called state for the prediction function to work
+  rename(state = lga)
+
+# load fitted macrodistancing model
+macro_model <- readRDS("outputs/fitted_macro_model.RDS")
+
+
+# replace location_change_trends with the new data
+macro_model$data$location_change_trends <- location_change_trends
+
+macro_predictions <- macrodistancing_model(macro_model$data, macro_model$params)
+OC_t_state <- macro_predictions$mean_daily_contacts
+pred_sim <- calculate(c(OC_t_state), values = macro_model$draws, nsim = 1000)[[1]][, , 1]
+quants <- t(apply(pred_sim, 2, quantile, c(0.05, 0.25, 0.75, 0.95)))
+colnames(quants) <- c("ci_90_lo", "ci_50_lo", "ci_50_hi", "ci_90_hi")
+
+# predicted trends for downstream modelling
+pred_trend <- macro_model$data$location_change_trends %>%
+  select(date, state) %>%
+  # add predictions
+  mutate(mean = colMeans(pred_sim)) %>%
+  bind_cols(as_tibble(quants))
+
+saveRDS(pred_trend,
+        file = "outputs/macrodistancing_trends_lga.RDS")
+
+# write this out for Nic R
+write.csv(pred_trend, file = "outputs/nsw/nonhousehold_contacts_lga_modelled.csv")
+
+# combine these with NSW data for other components to get TP for each LGA
+
+# load fitted reff model
+fitted_model <- readRDS("outputs/fitted_reff_model.RDS")
+
+# n_lga <- length(all_lgas) 
+
+all_dates <- unique(location_change_trends$date)
+n_dates <- length(all_dates)
+
+ga <- fitted_model$greta_arrays
+nsw_idx <- which(fitted_model$data$states == "NSW")
+
+# get index between dated for fitted model and for prediction
+start_idx <- as.numeric(min(all_dates) - min(fitted_model$data$dates$mobility))
+extra_dates <- as.numeric(max(all_dates) - max(fitted_model$data$dates$mobility))
+date_idx <- pmin(start_idx + seq_len(n_dates), n_dates)
+
+# time in household by LGA
+h_t <- location_change_trends %>%
+  select(state, date, home) %>%
+  pivot_wider(names_from = state, values_from = home) %>%
+  select(-date) %>%
+  as.matrix()
+
+de <- ga$distancing_effect
+infectious_days <- infectious_period(gi_cdf)
+HD_t <- de$HD_0 * h_t
+
+# non-household contact rates by LGA
+OC_t_lga <- trends_date_state(
+  "outputs/macrodistancing_trends_lga.RDS",
+  dates = all_dates
+)
+# get the probability of not transmitting per unit time, for Delta
+# p_star <- de$p_star[nrow(de$p_star), nsw_idx]
+
+p_star_nsw <- extend(de$p_star[, nsw_idx], n_rows = nrow(de$p_star) + extra_dates)
+p_star_nsw <- p_star_nsw[(start_idx + 1):length(p_star_nsw)]
+p_star_lga <- sweep(zeros(nrow(OC_t_lga), ncol(OC_t_lga)), 1, p_star_nsw, FUN = "+")
+
+# get the microdistancing effect, lining up dates
+gamma_t_nsw <- extend(de$gamma_t_state[, nsw_idx], n_rows = nrow(de$gamma_t_state) + extra_dates)
+gamma_t_nsw <- gamma_t_nsw[(start_idx + 1):length(gamma_t_nsw)]
+gamma_t_lga <- sweep(zeros(nrow(OC_t_lga), ncol(OC_t_lga)), 1, gamma_t_nsw, FUN = "+")
+
+household_infections <- de$HC_0 * (1 - p_star_lga ^ HD_t)
+non_household_infections <- OC_t_lga * gamma_t_lga * infectious_days * (1 - p_star_lga ^ de$OD_0)
+infections_distancing <- household_infections + non_household_infections
+
+surveillance_effect <- ga$surveillance_reff_local_reduction[date_idx, nsw_idx]
+extra_isolation_effect <- ga$extra_isolation_local_reduction[date_idx, nsw_idx]
+
+infections <- sweep(infections_distancing, 1, surveillance_effect * extra_isolation_effect, FUN = "*")
+
+reff_sims <- calculate(c(infections), values = fitted_model$draws, nsim = 1000)[[1]][, , 1]
+quants <- t(apply(reff_sims, 2, quantile, c(0.05, 0.25, 0.75, 0.95)))
+colnames(quants) <- c("ci_90_lo", "ci_50_lo", "ci_50_hi", "ci_90_hi")
+
+reff_trend <- macro_model$data$location_change_trends %>%
+  select(date, state) %>%
+  # add predictions
+  mutate(mean = colMeans(reff_sims)) %>%
+  bind_cols(as_tibble(quants)) %>%
+  rename(
+    lga = state
+  )
+
+# REFACTORING IS UP TO HERE - 2021-08-31
+
+# load vaccination effect estimates
+vaccine_effect <- read_csv(
+  "outputs/nsw/nsw_lgas_vaccination_effect.csv",
+  col_types = cols(
+    lga = col_character(),
+    date = col_date(format = ""),
+    forecast = col_logical(),
+    scenario = col_character(),
+    coverage_scenario = col_character(),
+    vaccination_transmission_multiplier = col_double(),
+    vaccination_transmission_reduction_percent = col_double()
+  )
+) %>%
+  mutate(
+    lga = str_remove(lga, " \\(A\\)"),
+    lga = str_remove(lga, " \\(C\\)"),
+    lga = str_remove(lga, " \\(NSW\\)"),
+  )
+
+
+# add a lookup between Reff names and vaccine names
+lga_lookup <- tibble::tribble(
+  ~lga_reff, ~lga_vaccine,
+  "Canterbury", "Canterbury-Bankstown",
+  "Bankstown", "Canterbury-Bankstown",
+  "MidCoast", "Mid-Coast",
+  "Strathfield Municipal", "Strathfield",
+  "Sutherland", "Sutherland Shire",
+  "The Hills", "The Hills Shire",
+  "Woolahra Municipal", "Woolahra"
+)
+
+reff_trend_vaccination <- reff_trend %>%
+  left_join(
+    lga_lookup,
+    by = c("lga" = "lga_reff")
+  ) %>%
+  mutate(
+    lga_vaccine = case_when(
+      is.na(lga_vaccine) ~ lga,
+      TRUE ~ lga_vaccine
+    )
+  ) %>%
+  filter(
+    lga_vaccine %in% vaccine_effect$lga
+  ) %>%
+  inner_join(
+    vaccine_effect,
+    by = c("lga_vaccine" = "lga", "date")
+  ) %>%
+  mutate(
+    across(
+      c(mean, starts_with("ci")),
+      ~ . * vaccination_transmission_multiplier
+    )
+  ) %>%
+  select(
+    -starts_with("vaccination")
+  )
+
+# save the reff trend outputs
+reff_trend %>%
+  write_csv("outputs/nsw/tp_trends_no_vacc.csv")
+
+reff_trend_vaccination %>%
+  write_csv("outputs/nsw/tp_trends_with_vacc.csv")
+
+for (this_lga in unique(reff_trend_vaccination$lga)) {
+  
+  reff_trend_vaccination_plot <- reff_trend_vaccination %>%
+    filter(lga == this_lga) %>%
+    mutate(
+      scenario = factor(
+        scenario,
+        levels = c(
+          "baseline",
+          "670K extra doses"
+        )
+      ),
+      coverage_scenario = factor(
+        coverage_scenario,
+        levels = c(
+          "max 70% coverage",
+          "max 80% coverage", 
+          "max 90% coverage",
+          "max 100% coverage"
+        )
+      )
+    ) 
+  
+  reff_trend_vaccination_plot %>%
+    ggplot(
+      aes(
+        x = date,
+        y = mean,
+        linetype = forecast
+      )
+    ) +
+    geom_ribbon(
+      aes(
+        ymax = ci_90_hi,
+        ymin = ci_90_lo
+      ),
+      fill = green,
+      alpha = 0.2
+    ) +
+    geom_ribbon(
+      aes(
+        ymax = ci_50_hi,
+        ymin = ci_50_lo
+      ),
+      fill = green,
+      alpha = 0.2
+    ) +
+    geom_line(
+      aes(y = ci_90_lo),
+      colour = green,
+      alpha = 0.8
+    ) + 
+    geom_line(
+      aes(y = ci_90_hi),
+      colour = green,
+      alpha = 0.8
+    ) +
+    geom_hline(
+      yintercept = 1,
+      linetype = 2,
+      colour = grey(0.5)
+    ) +
+    geom_vline(
+      aes(xintercept = date),
+      data = interventions() %>%
+        filter(state == "NSW"),
+      colour = "grey75"
+    ) +
+    geom_vline(
+      data = prop_variant_dates(),
+      aes(xintercept = date),
+      colour = "firebrick1",
+      linetype = 5
+    ) +
+    facet_grid(
+      scenario ~ coverage_scenario,
+      switch = "y"
+    ) +
+    ylab("Transmission potential") +
+    xlab("") +
+    ggtitle(this_lga) +
+    scale_y_continuous(position = "right") +
+    scale_x_date(
+      date_breaks = "1 month",
+      date_labels = "%e/%m"
+    ) +
+    # coord_cartesian(xlim = c(as.Date("2021-01-27"), last_date)) +
+    theme_cowplot() +
+    theme(
+      legend.position = "none",
+      strip.background = element_blank(),
+      # strip.placement = "outside"
+    )
+  
+  ggsave(
+    paste0("outputs/nsw/NSW_", this_lga, "_reff.png"),
+    width = 10,
+    height = 5,
+    bg = "white"
+  )
+  
+}

@@ -1,7 +1,5 @@
 # get the index of microdistancing in each state as a date-by-state matrix
-trends_date_state <- function (file, dates = NULL, states = NULL) {
-  
-  trends <- readRDS(file)
+trends_date_state <- function (trends, dates = NULL, states = NULL) {
   
   date_seq <- seq(min(trends$date), max(trends$date), by = 1)
   

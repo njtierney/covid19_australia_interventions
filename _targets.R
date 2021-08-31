@@ -1,5 +1,6 @@
 message("loading R packages")
 suppressPackageStartupMessages(source(here::here("packages.R")))
+message("Loading greta and tensorflow objects")
 source(here("greta-tf-objs.R"))
 # source("./conflicts.R")
 ## Load your R files
@@ -275,7 +276,60 @@ tar_plan(
   # combine these with NSW data for other components to get TP for each LGA
   
   # load fitted reff model
-  fitted_reff_model = readRDS("outputs/fitted_reff_model.RDS"),
+  tar_file(fitted_reff_model_path,
+           here("outputs/nsw/fitted_reff_model.RDS")),
+  
+  fitted_reff_model = read_rds(fitted_reff_model_path),
+  
+  tar_file(nishiura_samples_path,
+           here("data/parameters/nishiura_samples.csv")),
+  
+  nishiura_samples = get_nishiura_samples(nishiura_samples_path),
+  
+  gi_cdf = nishiura_cdf(nishiura_samples),
+  
+  reff_trend = create_reff_trend(location_change_trends,
+                                   macro_distancing_trends_lga,
+                                   fitted_reff_model,
+                                   macro_model,
+                                   gi_cdf),
+  
+  tar_file(reff_trend_csv, {
+    write_csv_return_path(
+      x = reff_trend,
+      file = here("outputs/nsw/tp_trends_no_vacc.csv")
+    )
+  }),
+  
+  tar_file(vaccine_effect_path, 
+           here("outputs/nsw/nsw_lgas_vaccination_effect.csv")),
+  
+  vaccine_effect = read_vaccine_effect(vaccine_effect_path),
+  
+  reff_trend_vaccination = create_reff_trend_vaccination(
+    reff_trend,
+    vaccine_effect
+  ),
+  
+  tar_file(reff_trend_vaccination_csv, {
+    write_csv_return_path(
+      x = reff_trend_vaccination,
+      file = here("outputs/nsw/tp_trends_no_vacc.csv")
+    )
+  }),
+  
+  reff_trend_vaccination_prep_plots = add_reff_trend_vac_prep_plots(
+    reff_trend_vaccination
+  ),
+  
+  reff_trend_vaccination_plots = add_reff_trend_vac_plots(
+    reff_trend_vaccination_prep_plots
+  ),
+
+  write_reff_trend_vaccination_plots = write_reff_trend_vac_plots(
+    reff_trend_vaccination_plots
+  ),
+  
   
   
 
