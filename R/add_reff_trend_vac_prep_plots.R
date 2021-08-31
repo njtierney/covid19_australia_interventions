@@ -30,7 +30,8 @@ add_reff_trend_vac_prep_plots <- function(reff_trend_vaccination) {
           "max 100% coverage"
         )
       )
-    ) 
+    ) %>% 
+    unnest(cols = c(data))
   
 
 }

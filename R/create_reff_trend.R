@@ -84,7 +84,7 @@ create_reff_trend <- function(location_change_trends,
   colnames(quants) <-
     c("ci_90_lo", "ci_50_lo", "ci_50_hi", "ci_90_hi")
 
-  reff_trend <- macro_model$data$location_change_trends %>%
+  reff_trend <- location_change_trends %>%
     select(date, state) %>%
     # add predictions
     mutate(mean = colMeans(reff_sims)) %>%

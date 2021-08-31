@@ -7,8 +7,10 @@
 #' @return
 #' @author Nicholas Tierney
 #' @export
-gg_reff_trend_vaccination_plots <- function(data) {
+gg_reff_trend_vaccination_plots <- function(data, lga) {
 
+  pals <- covid_pal()
+  
   data %>%
     ggplot(
       aes(
@@ -22,7 +24,7 @@ gg_reff_trend_vaccination_plots <- function(data) {
         ymax = ci_90_hi,
         ymin = ci_90_lo
       ),
-      fill = green,
+      fill = pals$green,
       alpha = 0.2
     ) +
     geom_ribbon(
@@ -30,17 +32,17 @@ gg_reff_trend_vaccination_plots <- function(data) {
         ymax = ci_50_hi,
         ymin = ci_50_lo
       ),
-      fill = green,
+      fill = pals$green,
       alpha = 0.2
     ) +
     geom_line(
       aes(y = ci_90_lo),
-      colour = green,
+      colour = pals$green,
       alpha = 0.8
     ) + 
     geom_line(
       aes(y = ci_90_hi),
-      colour = green,
+      colour = pals$green,
       alpha = 0.8
     ) +
     geom_hline(
@@ -64,9 +66,9 @@ gg_reff_trend_vaccination_plots <- function(data) {
       scenario ~ coverage_scenario,
       switch = "y"
     ) +
-    ylab("Transmission potential") +
-    xlab("") +
-    ggtitle(this_lga) +
+    labs(title = lga,
+         x = "",
+         y = "Transmission potential") +
     scale_y_continuous(position = "right") +
     scale_x_date(
       date_breaks = "1 month",

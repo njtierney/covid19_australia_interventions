@@ -8,7 +8,6 @@
 #' @author Nicholas Tierney
 #' @export
 gg_save_reff_trend_vac_plots <- function(reff_trend_vaccination_plots) {
-
   
     walk2(
       .x = reff_trend_vaccination_plots$path,
@@ -17,11 +16,13 @@ gg_save_reff_trend_vac_plots <- function(reff_trend_vaccination_plots) {
         filename = .x,
         plot = .y,
         width = 10,
-        height = 5
+        height = 5,
         # dpi = dpi,
         # scale = 1.2,
         bg = "white"
       )
     )
+  
+  reff_trend_vaccination_plots$path
   
 }

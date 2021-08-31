@@ -32,6 +32,7 @@ create_reff_trend_vaccination <- function(reff_trend, vaccine_effect) {
         TRUE ~ lga_vaccine
       )
     ) %>%
+    mutate(lga_vaccine = remove_lga_tails(lga_vaccine)) %>% 
     filter(
       lga_vaccine %in% vaccine_effect$lga
     ) %>%

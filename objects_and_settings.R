@@ -11,17 +11,6 @@ weighted_mean <- weighted.mean
 op <- greta::.internals$nodes$constructors$op
 
 
-# colours for plotting
-blue <- "steelblue3"
-purple <- "#C3A0E8"
-green <- brewer.pal(8, "Set2")[1]
-yellow <- brewer.pal(8, "Set2")[6]
-blue_green <- colorRampPalette(c("blue", green))(10)[8]
-yellow_green <- colorRampPalette(c("yellow", green))(10)[8]
-orange <- brewer.pal(8, "Set2")[2]
-pink <- brewer.pal(8, "Set2")[4]
-fifo <- "#A8EB12"
-
 # default cdf
 gi_cdf <- nishiura_cdf()
 

@@ -326,11 +326,12 @@ tar_plan(
     reff_trend_vaccination_prep_plots
   ),
 
-  write_reff_trend_vaccination_plots = write_reff_trend_vac_plots(
-    reff_trend_vaccination_plots
-  ),
-  
-  
+  tar_file(write_reff_trend_vaccination_plots, {
+    gg_save_reff_trend_vac_plots(
+      reff_trend_vaccination_plots
+    )
+  }
+  )
   
 
   # LGA activity mobility from google
