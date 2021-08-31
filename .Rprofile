@@ -1,3 +1,4 @@
+# source("renv/activate.R")
 setHook(
   packageEvent("conflicted", "attach"),
   function(...) {
