@@ -160,7 +160,7 @@ tar_plan(
     data_w_postcodes = australia_linelist,
     abs_lga_file = abs_lga_path,
   ),
-  tar_render(nsw_linelist, "doc/nsw-linelist.Rmd"),
+  # tar_render(nsw_linelist, "doc/nsw-linelist.Rmd"),
   tar_file(google_shape_path, here("data/shapefiles/google/google.gpkg")),
   google_shape = read_sf(google_shape_path) %>%
     filter(state == "New South Wales"),
@@ -186,7 +186,8 @@ tar_plan(
   mobility_data = read_google_mobility_data(),
   mobility_data_lga_table = create_lga_lookup(mobility_data),
   mobility_nsw = tidy_mobility_nsw(mobility_data),
-  mobility_fitted_nsw = add_mobility_data(mobility_nsw),
+  mobility_fitted_nsw = add_mobility_data(mobility_nsw,
+                                          n_weeks_ahead = 8),
   
   # keep only the LGAs where we managed to fit a model (others have too-small
   # sample sizes for Google to provide data on the metrics we care about)
@@ -247,10 +248,10 @@ tar_plan(
   mobility_gam_tidy_preds = add_gam_predictions(mobility_gam_with_refit),
   # need to check some of the implementation details for using the expand grid
   # part of this.
-  mobility_grid = create_expanded_grid(mobility_gam_with_refit),
+  mobility_grid = create_expanded_grid(mobility_gam_tidy_preds),
   mobility_gam_refit_error_id_poor_fit = 
     filter_gam_poor_fit(mobility_gam_with_refit),
-  mobility_gam_added_preds = add_fitted_upper_lower(mobility_gam_which_fit),
+  # mobility_gam_added_preds = add_fitted_upper_lower(mobility_gam_which_fit),
   # which uses this function: `predict_mobility_trend`
   # (note it has been modified from the branch you were working on)
 

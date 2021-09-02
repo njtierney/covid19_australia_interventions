@@ -5,6 +5,8 @@ predict_mobility_trend <- function(
   mobility,
   min_date = min(mobility$date),
   max_date = max(mobility$date)
+  # min_date = first_date,
+  # max_date = last_date + 7 * n_weeks_ahead
 ) {
   
   all_dates <- seq(min_date, max_date, by = 1)
