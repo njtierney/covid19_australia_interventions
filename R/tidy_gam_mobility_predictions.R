@@ -21,6 +21,6 @@ tidy_gam_mobility_predictions <- function(model, data) {
       fitted_trend_lower = fit$fit + fit$sd * qnorm(0.975),
     )
   
-  df_fitted
+  df_fitted 
 
 }

@@ -237,12 +237,19 @@ tar_plan(
                                         s_k = 48),
   mobility_gam_which_fit = filter_did_gam_fit(mobility_nest_model_fit),
   mobility_gam_which_error = filter_did_gam_error(mobility_nest_model_fit),
-  mobility_gam_refit_error = mobility_refit_gam(mobility_gam_which_error),
-  mobility_gam_refit_error_id_poor_fit = 
-    filter_gam_poor_fit(mobility_gam_which_error),
+  mobility_gam_error_msg = extract_unique_errors(mobility_gam_which_error),
+  mobility_gam_error_summary = 
+    summarise_error_reasons(mobility_gam_which_error),
+  mobility_gam_refit = mobility_refit_gam(mobility_gam_which_error,
+                                          mobility_gam_error_summary),
+  mobility_gam_with_refit = combined_refitted_gam(mobility_gam_which_fit,
+                                                  mobility_gam_refit),
+  mobility_gam_tidy_preds = add_gam_predictions(mobility_gam_with_refit),
   # need to check some of the implementation details for using the expand grid
   # part of this.
-  mobility_grid = create_expanded_grid(mobility_nest_model_fit),
+  mobility_grid = create_expanded_grid(mobility_gam_with_refit),
+  mobility_gam_refit_error_id_poor_fit = 
+    filter_gam_poor_fit(mobility_gam_with_refit),
   mobility_gam_added_preds = add_fitted_upper_lower(mobility_gam_which_fit),
   # which uses this function: `predict_mobility_trend`
   # (note it has been modified from the branch you were working on)
