@@ -12,4 +12,21 @@ setHook(
   }
 )
 
-library(conflicted)
+.First <- function() {
+  options(
+    repos = c(
+      milesmcbain = 'https://milesmcbain.r-universe.dev',
+      CRAN = 'https://cloud.r-project.org'
+    ),
+    browserNLdisabled = TRUE,
+    deparse.max.lines = 2
+  )
+}
+
+
+if (interactive()) {
+  suppressMessages(require(devtools))
+  suppressMessages(require(usethis))
+}
+
+Sys.setenv(RETICULATE_AUTOCONFIGURE = FALSE)
