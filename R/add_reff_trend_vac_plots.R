@@ -16,7 +16,7 @@ add_reff_trend_vac_plots <-
         plots = map2(.x = data,
                      .y = lga,
                      .f = gg_reff_trend_vaccination_plots),
-        path = glue("outputs/nsw/NSW_{lga}_reff.png")
+        path = here(glue("outputs/nsw/NSW_{lga}_reff.png"))
       )
     
   }

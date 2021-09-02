@@ -18,14 +18,17 @@ add_holidays_interventions <- function(mobility_nsw,
     group_by(state, date) %>% 
     nest() %>% 
     # then we can join the intervention data with this date/state rows
-    left_join(intervention_with_number(),
+    full_join(intervention_with_number(),
               by = c("date", "state")) %>% 
     # we can then repopulate the intervention id
     group_by(state) %>% 
-    fill(intervention_id, .direction = "downup") %>% 
     ungroup() %>% 
-    unnest(cols = data) %>% 
+    unnest(cols = data)  %>% 
     arrange(lga, date) %>% 
+    fill(intervention_id, .direction = "downup") 
+    group_by(date, state, intervention_id) %>% 
+    nest() %>% 
+    # THIS NEEDS A QUICK CODE REVIEW
     mutate(
       intervention_stage = as_factor(
         parse_number(intervention_id),

@@ -297,10 +297,10 @@ tar_plan(
   gi_cdf = nishiura_cdf(nishiura_samples),
   
   reff_trend = create_reff_trend(location_change_trends,
-                                   macro_distancing_trends_lga,
-                                   fitted_reff_model,
-                                   macro_model,
-                                   gi_cdf),
+                                 macro_distancing_trends_lga,
+                                 fitted_reff_model,
+                                 macro_model,
+                                 gi_cdf),
   
   tar_file(reff_trend_csv, {
     write_csv_return_path(
@@ -310,7 +310,7 @@ tar_plan(
   }),
   
   tar_file(vaccine_effect_path, 
-           here("outputs/nsw/nsw_lgas_vaccination_effect.csv")),
+           here("outputs/nsw/nsw_lgas_vaccination_effect_2021_09_02.csv")),
   
   vaccine_effect = read_vaccine_effect(vaccine_effect_path),
   
@@ -322,7 +322,7 @@ tar_plan(
   tar_file(reff_trend_vaccination_csv, {
     write_csv_return_path(
       x = reff_trend_vaccination,
-      file = here("outputs/nsw/tp_trends_no_vacc.csv")
+      file = here("outputs/nsw/tp_trends_with_vacc.csv")
     )
   }),
   
@@ -340,6 +340,8 @@ tar_plan(
     )
   }
   )
+  
+  # add a step to zip these up
   
 
   # LGA activity mobility from google

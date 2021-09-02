@@ -14,20 +14,47 @@ create_reff_trend <- function(location_change_trends,
                                macro_model,
                                gi_cdf) {
   
-  
   all_dates <- unique(location_change_trends$date)
   n_dates <- length(all_dates)
 
   ga <- fitted_reff_model$greta_arrays
   nsw_idx <- which(fitted_reff_model$data$states == "NSW")
 
+  surveillance_dates <- fitted_reff_model$data$dates$infection_project
+  mobility_dates <- fitted_reff_model$data$dates$mobility
   # get index between dated for fitted model and for prediction
-  start_idx <-
-    as.numeric(min(all_dates) - min(fitted_reff_model$data$dates$mobility))
-  extra_dates <-
-    as.numeric(max(all_dates) - max(fitted_reff_model$data$dates$mobility))
-  date_idx <- pmin(start_idx + seq_len(n_dates), n_dates)
+  # start_idx <- as.numeric(min(all_dates) - min(surveillance_dates))
+  # extra_dates <- as.numeric(max(all_dates) - max(surveillance_dates))
+  # date_idx <- pmin(start_idx + seq_len(n_dates), 
+  #                  length(surveillance_dates))
 
+  extract_dates_surveillance <- c(
+    seq(
+      min(all_dates),
+      max(surveillance_dates),
+      by = 1
+    ),
+    rep(
+      max(surveillance_dates),
+      as.numeric(max(all_dates) - max(surveillance_dates))
+    )
+  )
+  
+  extract_dates_mobility <- c(
+    seq(
+      min(all_dates),
+      max(mobility_dates),
+      by = 1
+    ),
+    rep(
+      max(mobility_dates),
+      as.numeric(max(all_dates) - max(mobility_dates))
+    )
+  )
+
+  extract_dates_surveillance_idx <- match(extract_dates_surveillance, surveillance_dates)
+  extract_dates_mobility_idx <- match(extract_dates_mobility, mobility_dates)
+  
   # time in household by LGA
   h_t <- location_change_trends %>%
     select(state, date, home) %>%
@@ -41,21 +68,20 @@ create_reff_trend <- function(location_change_trends,
 
   # non-household contact rates by LGA
   OC_t_lga <- trends_date_state(trends = macro_distancing_trends_lga,
-                                dates = all_dates
-  )
+                                dates = all_dates)
   # get the probability of not transmitting per unit time, for Delta
   # p_star <- de$p_star[nrow(de$p_star), nsw_idx]
 
-  p_star_nsw <-
-    extend(de$p_star[, nsw_idx], n_rows = nrow(de$p_star) + extra_dates)
-  p_star_nsw <- p_star_nsw[(start_idx + 1):length(p_star_nsw)]
+  # p_star_nsw <-
+  #   extend(de$p_star[, nsw_idx], n_rows = nrow(de$p_star) + extra_dates)
+  # p_star_nsw <- p_star_nsw[(start_idx + 1):length(p_star_nsw)]
+  p_star_nsw <- de$p_star[extract_dates_mobility_idx, nsw_idx]
   p_star_lga <-
     sweep(zeros(nrow(OC_t_lga), ncol(OC_t_lga)), 1, p_star_nsw, FUN = "+")
 
   # get the microdistancing effect, lining up dates
-  gamma_t_nsw <-
-    extend(de$gamma_t_state[, nsw_idx], n_rows = nrow(de$gamma_t_state) + extra_dates)
-  gamma_t_nsw <- gamma_t_nsw[(start_idx + 1):length(gamma_t_nsw)]
+  gamma_t_nsw <- de$gamma_t_state[extract_dates_mobility_idx, nsw_idx]
+  # gamma_t_nsw <- gamma_t_nsw[(start_idx + 1):length(gamma_t_nsw)]
   gamma_t_lga <-
     sweep(zeros(nrow(OC_t_lga), ncol(OC_t_lga)), 1, gamma_t_nsw, FUN = "+")
 
@@ -66,9 +92,9 @@ create_reff_trend <- function(location_change_trends,
     household_infections + non_household_infections
 
   surveillance_effect <-
-    ga$surveillance_reff_local_reduction[date_idx, nsw_idx]
+    ga$surveillance_reff_local_reduction[extract_dates_surveillance_idx, nsw_idx]
   extra_isolation_effect <-
-    ga$extra_isolation_local_reduction[date_idx, nsw_idx]
+    ga$extra_isolation_local_reduction[extract_dates_surveillance_idx, nsw_idx]
 
   infections <-
     sweep(infections_distancing,
