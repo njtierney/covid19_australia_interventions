@@ -23,5 +23,7 @@ gg_save_mobility_fitted_trend <- function(df_mobility_fitted_trend_plot_paths,
       bg = "white"
     )
   )
+  
+  df_mobility_fitted_trend_plot_paths$path
 
 }

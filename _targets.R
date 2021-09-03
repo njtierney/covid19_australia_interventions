@@ -144,10 +144,14 @@ tar_plan(
     contact_survey_fitted_glmm,
     contact_survey_glmm_prepped
   ),
-  contact_survey_prop_phys_dist_nsw_lga = write_csv(
-    contact_survey_glmm_aug,
-    file = "data/contact_survey_prop_phys_dist_nsw_lga.csv"
-  ),
+  
+  tar_file(contact_survey_prop_phys_dist_nsw_lga_csv, {
+    write_csv_return_path(
+      x = contact_survey_glmm_aug,
+      file = here("data/contact_survey_prop_phys_dist_nsw_lga.csv")
+    )
+  }),
+  
   plot_phys_distance_glmmm_all_popn =
     gg_phys_distance_all_popn(
       data = contact_survey_glmm_aug,
@@ -160,7 +164,7 @@ tar_plan(
     data_w_postcodes = australia_linelist,
     abs_lga_file = abs_lga_path,
   ),
-  # tar_render(nsw_linelist, "doc/nsw-linelist.Rmd"),
+  tar_render(nsw_linelist, "doc/nsw-linelist.Rmd"),
   tar_file(google_shape_path, here("data/shapefiles/google/google.gpkg")),
   google_shape = read_sf(google_shape_path) %>%
     filter(state == "New South Wales"),
@@ -173,11 +177,10 @@ tar_plan(
     mobility_data_lga_table
   ),
   tar_file(abs_lga_google_concordance_csv, {
-    write_csv(
+    write_csv_return_path(
       x = abs_lga_google_concordance,
       file = here("data/abs_lga_google_concordance.csv")
     )
-    here("data/abs_lga_google_concordance.csv")
   }),
 
   # modelling the mobility metrics by LGA
@@ -212,14 +215,10 @@ tar_plan(
     df_mobility_fitted_trend_plots
     ),
   
-  
-  tar_file(write_mobility_fitted_ggplot, {
-    gg_save_mobility_fitted_trend(
-      df_mobility_fitted_trend_plot_paths
-    )
-    df_mobility_fitted_trend_plot_paths$path
-  }
-  ),
+  tar_file(
+    write_mobility_fitted_ggplot,
+    gg_save_mobility_fitted_trend(df_mobility_fitted_trend_plot_paths)
+  ), 
   
   mobility_fitted_nsw_model_id_lgas_not_fit = identify_lgas_model_not_fit(
     mobility_fitted_nsw,
@@ -229,9 +228,10 @@ tar_plan(
   mobility_nsw_lgas_not_fit = mobility_nsw %>% 
     filter(lga %in% mobility_fitted_nsw_model_id_lgas_not_fit),
   
-  lgas_to_fit = 
-    na.omit(unique(mobility_fitted_nsw_model_is_fit$lga)),
+  lgas_to_fit = na.omit(unique(mobility_fitted_nsw_model_is_fit$lga)),
   
+  ###########################################################################
+  # extra refactored mobility modelling to add more GAM estimates for LGAs
   # work on a new approach to fitting these models
   mobility_holidays_interventions = add_holidays_interventions(mobility_nsw),
   mobility_nest_model_fit = add_gam_fit(mobility_holidays_interventions,
@@ -254,35 +254,34 @@ tar_plan(
   # mobility_gam_added_preds = add_fitted_upper_lower(mobility_gam_which_fit),
   # which uses this function: `predict_mobility_trend`
   # (note it has been modified from the branch you were working on)
+  ###########################################################################
 
   # save predictions in correct format for macro and mobility models
   # AKA "location_change_trends" object in "nsw-tp.R"
   location_change_trends = 
     prepare_fitted_for_macro_micro_models(mobility_fitted_nsw_concordance),
   
-  
   # load fitted macrodistancing model
   tar_file(macro_model_path, here("outputs/nsw/fitted_macro_model.RDS")),
   
   macro_model = read_rds(macro_model_path),
   
-  macro_distancing_trends_lga = 
-    model_macro_distancing_trends_lga(
-      location_change_trends,
-      macro_model
-    ),
+  macro_distancing_trends_lga = model_macro_distancing_trends_lga(
+    location_change_trends,
+    macro_model
+  ),
   
-  tar_file(macro_distancing_trends_lga_csv, {
-    write_csv(
+  nsw_csv_dir = dir_create(here("outputs/nsw/csv")),
+  
+  tar_file(
+    macro_distancing_trends_lga_csv,
+    write_csv_return_path(
       x = macro_distancing_trends_lga,
-      file = here("outputs/nsw/nonhousehold_contacts_lga_modelled.csv")
+      file = here("outputs/nsw/csv/nonhousehold_contacts_lga_modelled.csv")
     )
-    here("outputs/nsw/nonhousehold_contacts_lga_modelled.csv")
-  }),
-  
+  ),
   
   # combine these with NSW data for other components to get TP for each LGA
-  
   # load fitted reff model
   tar_file(fitted_reff_model_path,
            here("outputs/nsw/fitted_reff_model.RDS")),
@@ -302,15 +301,14 @@ tar_plan(
                                  macro_model,
                                  gi_cdf),
   
-  tar_file(reff_trend_csv, {
-    write_csv_return_path(
-      x = reff_trend,
-      file = here("outputs/nsw/tp_trends_no_vacc.csv")
-    )
-  }),
+  tar_file(reff_trend_csv,
+           write_csv_return_path(
+             x = reff_trend,
+             file = here("outputs/nsw/csv/tp_trends_no_vacc.csv")
+           )),
   
   tar_file(vaccine_effect_path, 
-           here("outputs/nsw/nsw_lgas_vaccination_effect_2021_09_02.csv")),
+           here("outputs/nsw/nsw_lgas_vaccination_effect.csv")),
   
   vaccine_effect = read_vaccine_effect(vaccine_effect_path),
   
@@ -322,7 +320,7 @@ tar_plan(
   tar_file(reff_trend_vaccination_csv, {
     write_csv_return_path(
       x = reff_trend_vaccination,
-      file = here("outputs/nsw/tp_trends_with_vacc.csv")
+      file = here("outputs/nsw/csv/tp_trends_with_vacc.csv")
     )
   }),
   
@@ -334,14 +332,23 @@ tar_plan(
     reff_trend_vaccination_prep_plots
   ),
 
-  tar_file(write_reff_trend_vaccination_plots, {
-    gg_save_reff_trend_vac_plots(
-      reff_trend_vaccination_plots
-    )
-  }
-  )
+  tar_file(
+    write_reff_trend_vaccination_plots,
+    gg_save_reff_trend_vac_plots(reff_trend_vaccination_plots)
+  ),
   
   # add a step to zip these up
+  # which should also solve the issue of needing to 
+  tar_file(
+    zipped_nsw,
+    zip_nsw(
+      write_reff_trend_vaccination_plots,
+      reff_trend_vaccination_csv,
+      reff_trend_csv,
+      macro_distancing_trends_lga_csv,
+      write_mobility_fitted_ggplot
+    )
+  )
   
 
   # LGA activity mobility from google
