@@ -177,10 +177,10 @@
     },
     "cachem": {
       "Package": "cachem",
-      "Version": "1.0.5",
+      "Version": "1.0.6",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "5346f76a33eb7417812c270b04a5581b"
+      "Hash": "648c5b3d71e6a37e3043617489a0a0e9"
     },
     "callr": {
       "Package": "callr",
@@ -254,10 +254,15 @@
     },
     "conflicted": {
       "Package": "conflicted",
-      "Version": "1.0.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "43c5107cc96f47043a56736768ecc59d"
+      "Version": "1.0.4.9000",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "conflicted",
+      "RemoteUsername": "nerskin",
+      "RemoteRef": "master",
+      "RemoteSha": "6a2d9719c92256813060c02a50d1f3045c1cd28d",
+      "Hash": "7209630518523ff95b8fa74ad5202a7f"
     },
     "cowplot": {
       "Package": "cowplot",

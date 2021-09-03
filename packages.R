@@ -15,6 +15,7 @@ conflict_prefer("%*%", "greta")
 conflict_prefer("pull", "dplyr")
 conflict_prefer("complete", "tidyr")
 conflict_prefer("expand", "tidyr")
+conflict_prefer("zip", "zip")
 weighted_mean <- weighted.mean
 
 library(bayesplot)
@@ -70,3 +71,4 @@ library(tidyverse)
 library(truncdist)
 library(units)
 library(vctrs)
+library(zip)
