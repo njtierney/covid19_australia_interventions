@@ -266,9 +266,13 @@ tar_plan(
   
   macro_model = read_rds(macro_model_path),
   
-  macro_distancing_trends_lga = model_macro_distancing_trends_lga(
+  macrodistancing_model_sims = run_macrodistancing_model_sims(
     location_change_trends,
     macro_model
+  ),
+  
+  macro_distancing_trends_lga = model_macro_distancing_trends_lga(
+    macrodistancing_model_sims
   ),
   
   nsw_csv_dir = dir_create(here("outputs/nsw/csv")),
@@ -277,6 +281,17 @@ tar_plan(
     macro_distancing_trends_lga_csv,
     write_csv_return_path(
       x = macro_distancing_trends_lga,
+      file = here("outputs/nsw/csv/macro_distancing_trends_lga.csv")
+    )
+  ),
+  
+  nonhousehold_contacts_lga_modelled = 
+    run_nonhousehold_contacts_lga_modelled(macrodistancing_model_sims),
+    
+  tar_file(
+    nonhousehold_contacts_lga_modelled_csv,
+    write_csv_return_path(
+      x = nonhousehold_contacts_lga_modelled,
       file = here("outputs/nsw/csv/nonhousehold_contacts_lga_modelled.csv")
     )
   ),
@@ -345,6 +360,7 @@ tar_plan(
       write_reff_trend_vaccination_plots,
       reff_trend_vaccination_csv,
       reff_trend_csv,
+      nonhousehold_contacts_lga_modelled_csv,
       macro_distancing_trends_lga_csv,
       write_mobility_fitted_ggplot
     )
